@@ -1,0 +1,75 @@
+# Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import os
+import re
+import tarfile
+
+
+class BertServer():
+    def __init__(self):
+        os.chdir(self.get_path())
+        self.with_gpu_flag = False
+        os.system(
+            'cp ./conf/model_toolkit.prototxt.bk ./conf/model_toolkit.prototxt')
+
+    def help(self):
+        print("hello")
+
+    def with_model(self, model_name):
+        os.chdir(self.get_path())
+        if not os.path.exists('data'):
+            os.makedirs('data/model/paddle/fluid')
+        self.get_model(model_name)
+        run_cmd = './bin/serving'
+        os.system(run_cmd)
+
+    def with_gpu(self):
+        self.with_gpu_flag = True
+        with open('./conf/model_toolkit.prototxt', 'r') as f:
+            conf_str = f.read()
+        conf_str = re.sub('CPU', 'GPU', conf_str)
+        conf_str = re.sub('}', '  enable_memory_optimization: 1\n}', conf_str)
+        open('./conf/model_toolkit.prototxt', 'w').write(conf_str)
+
+    def get_path(self):
+        py_path = os.path.dirname(os.__file__)
+        server_path = os.path.join(py_path,
+                                   'site-packages/bert_serving/server')
+        return server_path
+
+    def get_model(self, model_name):
+        tar_name = model_name + '.tar.gz'
+        model_url = '10.99.196.164:8099/' + tar_name
+
+        server_path = self.get_path()
+        model_path = os.path.join(server_path, 'data/model/paddle/fluid')
+
+        os.chdir(model_path)
+        if os.path.exists(model_name):
+            pass
+        else:
+            os.system('wget ' + model_url)
+            tar = tarfile.open(tar_name)
+            tar.extractall()
+            tar.close()
+            os.remove(tar_name)
+
+        #model_path = os.path.join(model_path, model_name)
+        os.chdir(server_path)
+        model_path_str = r'model_data_path: "./data/model/paddle/fluid/' + model_name + r'"'
+        with open('./conf/model_toolkit.prototxt', 'r') as f:
+            conf_str = f.read()
+        open('./conf/model_toolkit.prototxt', 'w').write(
+            re.sub('model_data_path.*"', model_path_str, conf_str))
