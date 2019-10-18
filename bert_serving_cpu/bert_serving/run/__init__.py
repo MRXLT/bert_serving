@@ -15,28 +15,37 @@
 import os
 import re
 import tarfile
+import bert_serving
 
 
 class BertServer():
-    def __init__(self):
+    def __init__(self, port=8010):
         os.chdir(self.get_path())
         self.with_gpu_flag = False
         self.gpuid = 0
+        self.port = port
         os.system(
             'cp ./conf/model_toolkit.prototxt.bk ./conf/model_toolkit.prototxt')
 
     def help(self):
         print("hello")
 
+    def show_conf(self):
+        with open('./conf/model_toolkit.prototxt', 'r') as f:
+            conf_str = f.read()
+        print(conf_str)
+
     def with_model(self, model_name):
         os.chdir(self.get_path())
-        if not os.path.exists('data'):
-            os.makedirs('data/model/paddle/fluid')
         self.get_model(model_name)
-        run_cmd = './bin/serving --bthread_min_concurrency=4 --bthread_concurrency=4'
+
+        run_cmd = './bin/serving --bthread_min_concurrency=4 --bthread_concurrency=4 '
+        run_cmd += '--port=' + str(self.port) + ' '
+
         if self.with_gpu_flag == True:
-            gpu_msg = '--gpuid=' + str(self.gpuid)
+            gpu_msg = '--gpuid=' + str(self.gpuid) + ' '
             run_cmd += gpu_msg
+
         os.system(run_cmd)
 
     def with_gpu(self, gpuid=0):
@@ -49,9 +58,8 @@ class BertServer():
         open('./conf/model_toolkit.prototxt', 'w').write(conf_str)
 
     def get_path(self):
-        py_path = os.path.dirname(os.__file__)
-        server_path = os.path.join(py_path,
-                                   'site-packages/bert_serving/server')
+        py_path = os.path.dirname(bert_serving.__file__)
+        server_path = os.path.join(py_path, 'server')
         return server_path
 
     def get_model(self, model_name):
@@ -60,7 +68,8 @@ class BertServer():
 
         server_path = self.get_path()
         model_path = os.path.join(server_path, 'data/model/paddle/fluid')
-
+        if not os.path.exists(model_path):
+            os.makedirs('data/model/paddle/fluid')
         os.chdir(model_path)
         if os.path.exists(model_name):
             pass
@@ -71,7 +80,6 @@ class BertServer():
             tar.close()
             os.remove(tar_name)
 
-        #model_path = os.path.join(model_path, model_name)
         os.chdir(server_path)
         model_path_str = r'model_data_path: "./data/model/paddle/fluid/' + model_name + r'"'
         with open('./conf/model_toolkit.prototxt', 'r') as f:
