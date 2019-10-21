@@ -62,9 +62,9 @@ class BertServer():
         server_path = os.path.join(py_path, 'server')
         return server_path
 
-    def get_model(self, model_name):
+    def get_model(self, model_name, ip='127.0.0.1', port='8099'):
         tar_name = model_name + '.tar.gz'
-        model_url = '10.99.196.164:8099/' + tar_name
+        model_url = ip + ':' + port + '/' + tar_name
 
         server_path = self.get_path()
         model_path = os.path.join(server_path, 'data/model/paddle/fluid')
