@@ -24,11 +24,15 @@ class BertServer():
         self.with_gpu_flag = False
         self.gpuid = 0
         self.port = port
+        self.model_url = '127.0.0.1:8099'
         os.system(
             'cp ./conf/model_toolkit.prototxt.bk ./conf/model_toolkit.prototxt')
 
     def help(self):
         print("hello")
+
+    def set_model_url(self, url):
+        self.model_url = url
 
     def show_conf(self):
         with open('./conf/model_toolkit.prototxt', 'r') as f:
@@ -64,7 +68,7 @@ class BertServer():
 
     def get_model(self, model_name):
         tar_name = model_name + '.tar.gz'
-        model_url = '10.99.196.164:8099/' + tar_name
+        model_url = self.model_url + '/' + tar_name
 
         server_path = self.get_path()
         model_path = os.path.join(server_path, 'data/model/paddle/fluid')
