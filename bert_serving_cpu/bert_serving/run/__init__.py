@@ -22,14 +22,31 @@ class BertServer():
     def __init__(self, port=8010):
         os.chdir(self.get_path())
         self.with_gpu_flag = False
-        self.gpuid = 0
-        self.port = port
+        self.gpuid = [0]
+        self.port = [port]
         self.model_url = '127.0.0.1:8099'
+        self.run_cmd = './bin/serving --bthread_min_concurrency=4 --bthread_concurrency=4 '
         os.system(
             'cp ./conf/model_toolkit.prototxt.bk ./conf/model_toolkit.prototxt')
 
     def help(self):
         print("hello")
+
+    def run(self):
+        cmd_list = []
+        if self.with_gpu_flag == True:
+            for gpuid, index in enumerate(self.gpuid):
+                gpu_msg = '--gpuid=' + str(gpuid) + ' '
+                run_cmd = self.run_cmd + gpu_msg
+                run_cmd += '--port=' + str(self.port[0] + index) + ' '
+                cmd_list.append(run_cmd)
+                print('Start serving on gpu ' + str(gpuid) + ' port = ' + str(
+                    self.port[0] + index))
+        else:
+            cmd_list.append(self.run_cmd)
+            print('Start serving on cpu')
+        for cmd in cmd_list:
+            os.system(cmd + '&')
 
     def set_model_url(self, url):
         self.model_url = url
@@ -43,23 +60,17 @@ class BertServer():
         os.chdir(self.get_path())
         self.get_model(model_name)
 
-        run_cmd = './bin/serving --bthread_min_concurrency=4 --bthread_concurrency=4 '
-        run_cmd += '--port=' + str(self.port) + ' '
-
-        if self.with_gpu_flag == True:
-            gpu_msg = '--gpuid=' + str(self.gpuid) + ' '
-            run_cmd += gpu_msg
-
-        os.system(run_cmd)
-
     def with_gpu(self, gpuid=0):
         self.with_gpu_flag = True
-        self.gpuid = gpuid
         with open('./conf/model_toolkit.prototxt', 'r') as f:
             conf_str = f.read()
         conf_str = re.sub('CPU', 'GPU', conf_str)
         conf_str = re.sub('}', '  enable_memory_optimization: 1\n}', conf_str)
         open('./conf/model_toolkit.prototxt', 'w').write(conf_str)
+        if type(gpuid) == int:
+            self.gpuid = [gpuid]
+        if type(gpuid) == list:
+            self.gpuid = gpuid
 
     def get_path(self):
         py_path = os.path.dirname(bert_serving.__file__)
