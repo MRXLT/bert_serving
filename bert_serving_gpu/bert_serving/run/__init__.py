@@ -35,7 +35,7 @@ class BertServer():
     def run(self):
         cmd_list = []
         if self.with_gpu_flag == True:
-            for gpuid, index in enumerate(self.gpuid):
+            for index, gpuid in enumerate(self.gpuid):
                 gpu_msg = '--gpuid=' + str(gpuid) + ' '
                 run_cmd = self.run_cmd + gpu_msg
                 run_cmd += '--port=' + str(self.port[0] + index) + ' '
