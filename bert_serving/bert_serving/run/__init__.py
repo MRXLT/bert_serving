@@ -16,6 +16,7 @@ import os
 import re
 import tarfile
 import bert_serving
+import subprocess
 
 
 class BertServer():
@@ -27,6 +28,7 @@ class BertServer():
         self.model_url = 'https://paddle-serving.bj.bcebos.com/data/bert'
         self.cpu_run_cmd = './bin/serving-cpu --bthread_min_concurrency=4 --bthread_concurrency=4 '
         self.gpu_run_cmd = './bin/serving-gpu --bthread_min_concurrency=4 --bthread_concurrency=4 '
+        self.p_list = []
         os.system(
             'cp ./conf/model_toolkit.prototxt.bk ./conf/model_toolkit.prototxt')
 
@@ -44,10 +46,21 @@ class BertServer():
                 print('Start serving on gpu ' + str(gpuid) + ' port = ' + str(
                     self.port[0] + index))
         else:
-            cmd_list.append(self.cpu_run_cmd)
+            re = subprocess.Popen(
+                'cat /usr/local/cuda/version.txt > tmp 2>&1', shell=True)
+            re.wait()
+            if re.returncode == 0:
+                cmd_list.append(self.gpu_run_cmd)
+            else:
+                cmd_list.append(self.cpu_run_cmd)
             print('Start serving on cpu port = ' + str(self.port[0]))
         for cmd in cmd_list:
-            os.system(cmd + '&')
+            process = subprocess.Popen(cmd, shell=True)
+            self.p_list.append(process)
+
+    def stop(self):
+        for p in self.p_list:
+            p.kill()
 
     def set_model_url(self, url):
         self.model_url = url

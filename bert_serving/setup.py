@@ -19,7 +19,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="bert_serving",
-    version="0.3.1",
+    version="0.0.0",
     author="MRXLT",
     author_email="xulongteng@baidu.com",
     description="package for paddle serving with bert",
