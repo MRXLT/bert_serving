@@ -18,11 +18,11 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="bert_serving",
+    name="bert_serving_client",
     version="0.3.1",
     author="MRXLT",
     author_email="xlt2024@gmail.com",
-    description="package for paddle serving with bert",
+    description="client package for bert serving",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/PaddlePaddle/Serving",
@@ -34,11 +34,4 @@ setuptools.setup(
     ],
     python_requires='>=3.5',
     #data_files=[('bert_server',['./server/*'])],
-    package_data={
-        'bert_serving': [
-            'server/bin/*',
-            'server/conf/*',
-            'server/data/model/paddle/fluid_reload_flag',
-            'server/data/model/paddle/fluid_time_file',
-        ]
-    })
+    package_data={'bert_serving_client': ['vocab/*.txt', ]})
