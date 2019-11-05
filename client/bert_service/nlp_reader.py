@@ -27,11 +27,11 @@ from collections import namedtuple
 
 #import paddle
 
-import tokenization
+from . import tokenization
 #from paddlehub.common.logger import logger
 #from paddlehub.common.utils import sys_stdout_encoding
 #from paddlehub.dataset.dataset import InputExample
-from batching import pad_batch_data, prepare_batch_data
+from .batching import pad_batch_data, prepare_batch_data
 
 #import paddlehub as hub
 

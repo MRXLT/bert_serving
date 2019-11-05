@@ -18,8 +18,8 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="bert_serving_client",
-    version="0.3.1",
+    name="bert_service",
+    version="0.3.5",
     author="MRXLT",
     author_email="xlt2024@gmail.com",
     description="client package for bert serving",
@@ -28,10 +28,10 @@ setuptools.setup(
     url="https://github.com/PaddlePaddle/Serving",
     packages=setuptools.find_packages(),
     classifiers=[
-        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 2",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.5',
+    python_requires='>=2.7',
     #data_files=[('bert_server',['./server/*'])],
-    package_data={'bert_serving_client': ['vocab/*.txt', ]})
+    package_data={'bert_service': ['vocab/*.txt', ]})

@@ -2,9 +2,10 @@
 import sys
 import time
 #import numpy as np
-from nlp_reader import ClassifyReader
+from .nlp_reader import ClassifyReader
 import json
-
+import os
+import bert_service
 _ver = sys.version_info
 is_py2 = (_ver[0] == 2)
 is_py3 = (_ver[0] == 3)
@@ -23,6 +24,7 @@ class BertService():
                  emb_size=768,
                  show_ids=False,
                  do_lower_case=True):
+        py_path = os.path.dirname(bert_service.__file__)
         self.reader_flag = False
         self.batch_size = 16
         self.embedding_size = emb_size
@@ -35,12 +37,16 @@ class BertService():
         self.con_index = 0
         self.load_balance = 'random_robin'
         self.vocab_dict = {
-            'bert_chinese_L-12_H-768_A-12': './vocab/chinese_vocab.txt',
-            'bert_uncased_L-12_H-768_A-12': './vocab/uncased_vocab.txt',
-            'bert_uncased_L-24_H-1024_A-16': './vocab/uncased_vocab.txt',
-            'bert_cased_L-12_H-768_A-12': './vocab/cased_vocab.txt',
-            'bert_cased_L-24_H-1024_A-16': './vocab/cased_vocab.txt',
-            'bert_multi_cased_L-12_H-768_A-12': './vocab/multi_cased_vocab.txt'
+            'bert_chinese_L-12_H-768_A-12':
+            py_path + '/vocab/chinese_vocab.txt',
+            'bert_uncased_L-12_H-768_A-12':
+            py_path + '/vocab/uncased_vocab.txt',
+            'bert_uncased_L-24_H-1024_A-16':
+            py_path + '/vocab/uncased_vocab.txt',
+            'bert_cased_L-12_H-768_A-12': py_path + '/vocab/cased_vocab.txt',
+            'bert_cased_L-24_H-1024_A-16': py_path + '/vocab/cased_vocab.txt',
+            'bert_multi_cased_L-12_H-768_A-12':
+            py_path + '/vocab/multi_cased_vocab.txt'
         }
 
     def connect(self, ip='127.0.0.1', port=8010):
@@ -55,6 +61,7 @@ class BertService():
         if self.reader_flag == False:
             #module = hub.Module(name=self.model_name)
             #dataset = hub.dataset.ChnSentiCorp()
+
             self.reader = ClassifyReader(
                 vocab_path=self.vocab_dict[self.model_name],
                 max_seq_len=self.max_seq_len,
