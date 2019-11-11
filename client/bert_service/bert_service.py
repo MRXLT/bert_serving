@@ -53,14 +53,14 @@ class BertService():
         con = httplib.HTTPConnection(ip, port)
         self.con_list.append(con)
 
-    def connect_all(self, ip_list=['127.0.0.1'], port_list=[8010]):
-        for index, ip in enumerate(ip_list):
-            self.con_list.append(httplib.HTTPConnection(ip, port_list[index]))
+    def connect_all_server(self, server_list):
+        for server_str in server_list:
+            ip, port = server_str.split(':')
+            port = int(port)
+            self.con_list.append(httplib.HTTPConnection(ip, port))
 
     def data_convert(self, text):
         if self.reader_flag == False:
-            #module = hub.Module(name=self.model_name)
-            #dataset = hub.dataset.ChnSentiCorp()
 
             self.reader = ClassifyReader(
                 vocab_path=self.vocab_dict[self.model_name],
@@ -164,7 +164,7 @@ def test():
         emb_size=768,
         show_ids=True,
         do_lower_case=True)
-    bc.connect('127.0.0.1', 8010)
+    bc.connect_all_server('127.0.0.1:8010')
     result = bc.encode([["As long as"], ])
     print(result[0])
     bc.close()

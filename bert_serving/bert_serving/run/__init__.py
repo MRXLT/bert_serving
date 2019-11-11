@@ -28,6 +28,7 @@ class BertServer():
         self.model_url = 'https://paddle-serving.bj.bcebos.com/data/bert'
         self.cpu_run_cmd = './bin/serving-cpu --bthread_min_concurrency=4 --bthread_concurrency=4 '
         self.gpu_run_cmd = './bin/serving-gpu --bthread_min_concurrency=4 --bthread_concurrency=4 '
+        self.p_list = []
         os.system(
             'cp ./conf/model_toolkit.prototxt.bk ./conf/model_toolkit.prototxt')
 
@@ -72,9 +73,6 @@ class BertServer():
     def with_model(self, model_name):
         os.chdir(self.get_path())
         self.get_model(model_name)
-
-    def with_gpu(self, gpuid=0):
-        with_gpu_index(gpuid)
 
     def with_gpu_index(self, gpuid=0):
         self.with_gpu_flag = True
