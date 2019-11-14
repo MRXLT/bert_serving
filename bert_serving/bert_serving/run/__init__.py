@@ -92,12 +92,14 @@ class BertServer():
             conf_str = f.read()
         print(conf_str)
 
-    def with_model(self, model_name, model_url=None):
+    def with_model(self, model_name=None, model_url=None):
         '''
         if model_url != None:
             self.mode_url = model_url
             self.use_other_model = True
         '''
+        if model_name == None or type(model_name) != str:
+            print('Please set model name string')
         os.chdir(self.get_path())
         self.get_model(model_name)
 
