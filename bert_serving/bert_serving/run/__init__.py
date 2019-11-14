@@ -32,6 +32,7 @@ class BertServer():
         os.chdir(self.get_path())
         self.with_gpu_flag = with_gpu
         self.p_list = []
+        self.use_other_model = False
         self.model_url = 'https://paddle-serving.bj.bcebos.com/data/bert'
         self.cpu_run_cmd = './bin/serving-cpu --bthread_min_concurrency=4 --bthread_concurrency=4 '
         self.gpu_run_cmd = './bin/serving-gpu --bthread_min_concurrency=4 --bthread_concurrency=4 '
@@ -92,8 +93,11 @@ class BertServer():
         print(conf_str)
 
     def with_model(self, model_name, model_url=None):
+        '''
         if model_url != None:
             self.mode_url = model_url
+            self.use_other_model = True
+        '''
         os.chdir(self.get_path())
         self.get_model(model_name)
 
@@ -104,7 +108,7 @@ class BertServer():
 
     def get_model(self, model_name):
         server_path = self.get_path()
-        if not paddlehub_found:
+        if not paddlehub_found or self.use_other_model:
             tar_name = model_name + '.tar.gz'
             model_url = self.model_url + '/' + tar_name
 
