@@ -17,74 +17,85 @@ import re
 import tarfile
 import bert_serving
 import subprocess
+import imp
+
+try:
+    imp.find_module('paddlehub')
+    paddlehub_found = True
+    print('Working with paddlehub')
+except ImportError:
+    paddlehub_found = False
 
 
 class BertServer():
-    def __init__(self, port=8010):
+    def __init__(self, with_gpu=True):
         os.chdir(self.get_path())
-        self.with_gpu_flag = False
-        self.gpuid = [0]
-        self.port = [port]
+        self.with_gpu_flag = with_gpu
+        self.p_list = []
         self.model_url = 'https://paddle-serving.bj.bcebos.com/data/bert'
         self.cpu_run_cmd = './bin/serving-cpu --bthread_min_concurrency=4 --bthread_concurrency=4 '
         self.gpu_run_cmd = './bin/serving-gpu --bthread_min_concurrency=4 --bthread_concurrency=4 '
-        self.p_list = []
         os.system(
             'cp ./conf/model_toolkit.prototxt.bk ./conf/model_toolkit.prototxt')
+
+        if self.with_gpu_flag:
+            with open('./conf/model_toolkit.prototxt', 'r') as f:
+                conf_str = f.read()
+            conf_str = re.sub('CPU', 'GPU', conf_str)
+            conf_str = re.sub('}', '  enable_memory_optimization: 1\n}',
+                              conf_str)
+            open('./conf/model_toolkit.prototxt', 'w').write(conf_str)
 
     def help(self):
         print("hello")
 
-    def run(self):
-        cmd_list = []
+    def run(self, gpu_index=0, port=8010):
         if self.with_gpu_flag == True:
-            for index, gpuid in enumerate(self.gpuid):
-                gpu_msg = '--gpuid=' + str(gpuid) + ' '
-                run_cmd = self.gpu_run_cmd + gpu_msg
-                run_cmd += '--port=' + str(self.port[0] + index) + ' '
-                cmd_list.append(run_cmd)
-                print('Start serving on gpu ' + str(gpuid) + ' port = ' + str(
-                    self.port[0] + index))
+            gpu_msg = '--gpuid=' + str(gpu_index) + ' '
+            run_cmd = self.gpu_run_cmd + gpu_msg
+            run_cmd += '--port=' + str(port) + ' '
+            print('Start serving on gpu ' + str(gpu_index) + ' port = ' + str(
+                port))
         else:
             re = subprocess.Popen(
                 'cat /usr/local/cuda/version.txt > tmp 2>&1', shell=True)
             re.wait()
             if re.returncode == 0:
-                cmd_list.append(self.gpu_run_cmd)
+                run_cmd = self.gpu_run_cmd + '--port=' + str(port) + ' '
             else:
-                cmd_list.append(self.cpu_run_cmd)
-            print('Start serving on cpu port = ' + str(self.port[0]))
-        for cmd in cmd_list:
-            process = subprocess.Popen(cmd, shell=True)
-            self.p_list.append(process)
+                run_cmd = self.cpu_run_cmd + '--port=' + str(port) + ' '
+
+        process = subprocess.Popen(run_cmd, shell=True)
+        self.p_list.append(process)
+
+    def run_multi(self, gpu_index_list=[], port_list=[]):
+        if len(port_list) < 1:
+            print('Please set one port at least.')
+            return -1
+        if self.with_gpu_flag == True:
+            if len(gpu_index_list) != len(port_list):
+                print('Expect same length of gpu_index_list and port_list.')
+                return -1
+            for gpu_index, port in zip(gpu_index_list, port_list):
+                self.run(gpu_index=gpu_index, port=port)
+        else:
+            for port in port_list:
+                self.run(port=port)
 
     def stop(self):
         for p in self.p_list:
             p.kill()
-
-    def set_model_url(self, url):
-        self.model_url = url
 
     def show_conf(self):
         with open('./conf/model_toolkit.prototxt', 'r') as f:
             conf_str = f.read()
         print(conf_str)
 
-    def with_model(self, model_name):
+    def with_model(self, model_name, model_url=None):
+        if model_url != None:
+            self.mode_url = model_url
         os.chdir(self.get_path())
         self.get_model(model_name)
-
-    def with_gpu_index(self, gpuid=0):
-        self.with_gpu_flag = True
-        with open('./conf/model_toolkit.prototxt', 'r') as f:
-            conf_str = f.read()
-        conf_str = re.sub('CPU', 'GPU', conf_str)
-        conf_str = re.sub('}', '  enable_memory_optimization: 1\n}', conf_str)
-        open('./conf/model_toolkit.prototxt', 'w').write(conf_str)
-        if type(gpuid) == int:
-            self.gpuid = [gpuid]
-        if type(gpuid) == list:
-            self.gpuid = gpuid
 
     def get_path(self):
         py_path = os.path.dirname(bert_serving.__file__)
@@ -92,25 +103,63 @@ class BertServer():
         return server_path
 
     def get_model(self, model_name):
-        tar_name = model_name + '.tar.gz'
-        model_url = self.model_url + '/' + tar_name
-
         server_path = self.get_path()
-        model_path = os.path.join(server_path, 'data/model/paddle/fluid')
-        if not os.path.exists(model_path):
-            os.makedirs('data/model/paddle/fluid')
-        os.chdir(model_path)
-        if os.path.exists(model_name):
-            pass
+        if not paddlehub_found:
+            tar_name = model_name + '.tar.gz'
+            model_url = self.model_url + '/' + tar_name
+
+            model_path = os.path.join(server_path, 'data/model/paddle/fluid')
+            if not os.path.exists(model_path):
+                os.makedirs('data/model/paddle/fluid')
+            os.chdir(model_path)
+            if os.path.exists(model_name):
+                pass
+            else:
+                os.system('wget ' + model_url + ' --no-check-certificate')
+                tar = tarfile.open(tar_name)
+                tar.extractall()
+                tar.close()
+                os.remove(tar_name)
+
+            model_path_str = r'model_data_path: "./data/model/paddle/fluid/' + model_name + r'"'
+
         else:
-            os.system('wget ' + model_url + ' --no-check-certificate')
-            tar = tarfile.open(tar_name)
-            tar.extractall()
-            tar.close()
-            os.remove(tar_name)
+            import paddlehub as hub
+            import paddle.fluid as fluid
+
+            paddlehub_modules_path = os.path.expanduser('~/.paddlehub')
+            paddlehub_bert_path = os.path.join(paddlehub_modules_path,
+                                               'bert_service')
+            model_path = os.path.join(paddlehub_bert_path, model_name)
+            model_path_str = r'model_data_path: "' + model_path + r'"'
+
+            if not os.path.exists(model_path):
+                print('Save model for serving ...')
+                os.makedirs(model_path)
+                module = hub.Module(name=model_name)
+                inputs, outputs, program = module.context(
+                    trainable=True, max_seq_len=128)
+                place = fluid.core_avx.CPUPlace()
+                exe = fluid.Executor(place)
+                input_ids = inputs["input_ids"]
+                position_ids = inputs["position_ids"]
+                segment_ids = inputs["segment_ids"]
+                input_mask = inputs["input_mask"]
+                feed_var_names = [
+                    input_ids.name, position_ids.name, segment_ids.name,
+                    input_mask.name
+                ]
+                target_vars = [
+                    outputs["pooled_output"], outputs["sequence_output"]
+                ]
+                fluid.io.save_inference_model(
+                    feeded_var_names=feed_var_names,
+                    target_vars=target_vars,
+                    main_program=program,
+                    executor=exe,
+                    dirname=model_path)
 
         os.chdir(server_path)
-        model_path_str = r'model_data_path: "./data/model/paddle/fluid/' + model_name + r'"'
         with open('./conf/model_toolkit.prototxt', 'r') as f:
             conf_str = f.read()
         open('./conf/model_toolkit.prototxt', 'w').write(

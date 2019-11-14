@@ -19,7 +19,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="bert_serving",
-    version="0.3.1",
+    version="0.3.7",
     author="MRXLT",
     author_email="xlt2024@gmail.com",
     description="package for paddle serving with bert",
@@ -33,7 +33,6 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.5',
-    #data_files=[('bert_server',['./server/*'])],
     package_data={
         'bert_serving': [
             'server/bin/*',
