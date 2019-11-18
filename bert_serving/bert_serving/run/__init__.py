@@ -141,7 +141,6 @@ class BertServer():
 
             if not os.path.exists(model_path):
                 print('Save model for serving ...')
-                os.makedirs(model_path)
                 module = hub.Module(name=model_name)
                 inputs, outputs, program = module.context(
                     trainable=True, max_seq_len=128)
@@ -158,6 +157,7 @@ class BertServer():
                 target_vars = [
                     outputs["pooled_output"], outputs["sequence_output"]
                 ]
+                os.makedirs(model_path)
                 fluid.io.save_inference_model(
                     feeded_var_names=feed_var_names,
                     target_vars=target_vars,
