@@ -18,21 +18,22 @@ import tarfile
 import bert_serving
 import subprocess
 import imp
-
-try:
-    imp.find_module('paddlehub')
-    paddlehub_found = True
-    print('Working with paddlehub')
-except ImportError:
-    paddlehub_found = False
+import time
 
 
 class BertServer():
     def __init__(self, with_gpu=True):
+        try:
+            imp.find_module('paddlehub')
+            self.paddlehub_found = True
+            print('Working with paddlehub')
+        except ImportError:
+            self.paddlehub_found = False
         os.chdir(self.get_path())
         self.with_gpu_flag = with_gpu
         self.p_list = []
         self.use_other_model = False
+        self.run_m = False
         self.model_url = 'https://paddle-serving.bj.bcebos.com/data/bert'
         self.cpu_run_cmd = './bin/serving-cpu --bthread_min_concurrency=4 --bthread_concurrency=4 '
         self.gpu_run_cmd = './bin/serving-gpu --bthread_min_concurrency=4 --bthread_concurrency=4 '
@@ -50,7 +51,7 @@ class BertServer():
     def help(self):
         print("hello")
 
-    def run(self, gpu_index=0, port=8010):
+    def run(self, gpu_index=0, port=8866):
         if self.with_gpu_flag == True:
             gpu_msg = '--gpuid=' + str(gpu_index) + ' '
             run_cmd = self.gpu_run_cmd + gpu_msg
@@ -65,11 +66,17 @@ class BertServer():
                 run_cmd = self.gpu_run_cmd + '--port=' + str(port) + ' '
             else:
                 run_cmd = self.cpu_run_cmd + '--port=' + str(port) + ' '
+            print('Start serving on cpu port = {}'.format(port))
 
         process = subprocess.Popen(run_cmd, shell=True)
+
         self.p_list.append(process)
+        if not self.run_m:
+            while True:
+                time.sleep(60)
 
     def run_multi(self, gpu_index_list=[], port_list=[]):
+        self.run_m = True
         if len(port_list) < 1:
             print('Please set one port at least.')
             return -1
@@ -82,6 +89,9 @@ class BertServer():
         else:
             for port in port_list:
                 self.run(port=port)
+
+        while True:
+            time.sleep(60)
 
     def stop(self):
         for p in self.p_list:
@@ -110,7 +120,7 @@ class BertServer():
 
     def get_model(self, model_name):
         server_path = self.get_path()
-        if not paddlehub_found or self.use_other_model:
+        if not self.paddlehub_found or self.use_other_model:
             tar_name = model_name + '.tar.gz'
             model_url = self.model_url + '/' + tar_name
 
